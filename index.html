@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>信用卡回饋詳情版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .bank-玉山 { border-top: 5px solid #13a8a8; }
+        .bank-國泰世華 { border-top: 5px solid #00a041; }
+        .bank-中國信託 { border-top: 5px solid #005a3c; }
+        .bank-台北富邦 { border-top: 5px solid #004a92; }
+        .bank-台新 { border-top: 5px solid #c41230; }
+        .bank-聯邦 { border-top: 5px solid #f39800; }
+        .bank-星展 { border-top: 5px solid #ff3333; }
+        .reward-pill { background: #f0f7ff; color: #1e40af; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen pb-10">
+    <header class="bg-white border-b sticky top-0 z-50 py-4 shadow-sm">
+        <div class="max-w-4xl mx-auto px-4">
+            <h1 class="text-xl font-bold text-gray-800 text-center mb-4">💳 信用卡回饋詳細查詢</h1>
+            <div class="relative">
+                <input type="text" id="searchInput" placeholder="搜尋通路、銀行或卡名..." 
+                    class="w-full p-3 bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                <div id="suggestions" class="absolute left-0 right-0 bg-white mt-2 rounded-lg shadow-xl hidden overflow-hidden z-50 border"></div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 mt-6">
+        <div id="cardList" class="space-y-4"></div>
+    </main>
+
+    <script>
+        // 詳細資料結構：包含基礎、加碼、上限
+        const cardData = [
+            { 
+                name: "玉山 U Bear 卡", bank: "玉山", 
+                mainReward: "3%", 
+                detail: { base: "1%", extra: "2%", limit: "200元/月 (刷1萬達標)", condition: "需綁定指定電支" },
+                tags: ["網購", "LINE Pay", "Netflix", "超商"] 
+            },
+            { 
+                name: "台新 @GoGo 卡", bank: "台新", 
+                mainReward: "3.8%", 
+                detail: { base: "0.3%", extra: "3.5%", limit: "1000點/月 (刷2.8萬達標)", condition: "需Richart扣款+電子帳單" },
+                tags: ["LINE Pay", "全支付", "台新Pay", "網購"] 
+            },
+            { 
+                name: "國泰世華 CUBE 卡", bank: "國泰世華", 
+                mainReward: "3%", 
+                detail: { base: "0.3%", extra: "2.7%", limit: "無上限", condition: "需當日於App切換正確方案" },
+                tags: ["蝦皮", "海外", "外送", "百貨"] 
+            },
+            { 
+                name: "富邦 J 卡", bank: "台北富邦", 
+                mainReward: "10%", 
+                detail: { base: "1%", extra: "9%", limit: "上限 200/500 元(依活動)", condition: "限日韓實體消費+需登錄" },
+                tags: ["日本", "韓國", "超商"] 
+            },
+            { 
+                name: "聯邦 吉鶴卡", bank: "聯邦", 
+                mainReward: "4.5%", 
+                detail: { base: "1%", extra: "3.5%", limit: "每月上限 1000 元", condition: "日本Apple Pay支付加碼" },
+                tags: ["日本", "Apple Pay", "日系名店"] 
+            }
+            // ... 可自行比照結構增加其他卡片
+        ];
+
+        const allTags = [...new Set(cardData.flatMap(c => c.tags))];
+        const searchInput = document.getElementById('searchInput');
+        const suggestionsBox = document.getElementById('suggestions');
+        const cardListElement = document.getElementById('cardList');
+
+        function render(data) {
+            cardListElement.innerHTML = data.map(card => `
+                <div class="bg-white rounded-2xl shadow-sm overflow-hidden border bank-${card.bank}">
+                    <div class="p-5">
+                        <div class="flex justify-between items-center mb-3">
+                            <div>
+                                <span class="text-xs font-bold text-gray-400 uppercase tracking-tighter">${card.bank}</span>
+                                <h2 class="text-lg font-bold text-gray-900">${card.name}</h2>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-3xl font-black text-blue-600">${card.mainReward}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gray-50 rounded-xl p-4 text-sm space-y-2 mb-4 border border-dashed">
+                            <div class="flex justify-between"><span class="text-gray-500">基礎回饋</span><span class="font-medium">${card.detail.base}</span></div>
+                            <div class="flex justify-between"><span class="text-gray-500">加碼回饋</span><span class="text-red-500 font-bold">+${card.detail.extra}</span></div>
+                            <div class="flex justify-between border-t pt-2"><span class="text-gray-500">每月上限</span><span class="text-gray-800 font-bold">${card.detail.limit}</span></div>
+                            <div class="text-xs text-blue-600 font-medium mt-1">⚠️ 條件：${card.detail.condition}</div>
+                        </div>
+
+                        <div class="flex flex-wrap gap-2">
+                            ${card.tags.map(t => `<span class="bg-blue-50 text-blue-500 px-3 py-1 rounded-full text-xs font-medium">#${t}</span>`).join('')}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 搜尋邏輯 (同前)
+        searchInput.addEventListener('input', (e) => {
+            const val = e.target.value.toLowerCase();
+            if (!val) { suggestionsBox.classList.add('hidden'); render(cardData); return; }
+            const matches = allTags.filter(tag => tag.toLowerCase().includes(val)).slice(0, 5);
+            if (matches.length > 0) {
+                suggestionsBox.innerHTML = matches.map(m => `<div class="p-3 hover:bg-gray-50 cursor-pointer border-b" onclick="selectSuggestion('${m}')">🔍 ${m}</div>`).join('');
+                suggestionsBox.classList.remove('hidden');
+            } else { suggestionsBox.classList.add('hidden'); }
+            render(cardData.filter(c => c.name.includes(val) || c.tags.some(t => t.includes(val)) || c.bank.includes(val)));
+        });
+
+        window.selectSuggestion = (text) => {
+            searchInput.value = text;
+            suggestionsBox.classList.add('hidden');
+            render(cardData.filter(c => c.tags.includes(text)));
+        };
+
+        render(cardData);
+    </script>
+</body>
+</html>
